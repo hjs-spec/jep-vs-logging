@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Small JEP-vs-logging demonstration.
 
-The script writes an ordinary audit log and a JEP-style event archive, then shows
-why the log cannot replay accountability semantics while the JEP archive can be
-replayed and verified.
+The script compares text logs with unsigned local hash envelopes. It does not
+implement Core 0.6 signatures, HJS receipts, JAC declarations or authenticity.
 """
 
 from __future__ import annotations
@@ -196,9 +195,9 @@ def main() -> int:
     if args.verify:
         ok, errors = replay_verify_jep_archive(load_archive(args.verify))
         if ok:
-            print(f"JEP archive verification passed: {args.verify}")
+            print(f"Local hash consistency passed (unsigned demo): {args.verify}")
             return 0
-        print(f"JEP archive verification failed: {args.verify}")
+        print(f"Local hash consistency failed: {args.verify}")
         for error in errors:
             print(f"- {error}")
         return 1
@@ -209,7 +208,7 @@ def main() -> int:
     jep_ok, jep_errors = replay_verify_jep_archive(load_archive(JEP_ARCHIVE_PATH))
 
     print(f"Wrote ordinary audit log: {AUDIT_LOG_PATH}")
-    print(f"Wrote JEP event archive: {JEP_ARCHIVE_PATH}")
+    print(f"Wrote local demo envelope archive: {JEP_ARCHIVE_PATH}")
     print("\nReplay check:")
     if ordinary_ok:
         print("- ordinary audit log: replay verification passed")
@@ -220,10 +219,10 @@ def main() -> int:
         )
 
     if jep_ok:
-        print("- JEP archive: replay verification passed")
+        print("- local envelope: hash consistency passed; no Core signature verification")
         return 0
 
-    print("- JEP archive: replay verification failed")
+    print("- local envelope: hash consistency failed")
     for error in jep_errors:
         print(f"  - {error}")
     return 1

@@ -1,101 +1,29 @@
-# JEP is not logging.
+# Structured events and logging
 
-> Logging records what happened.  
-> JEP makes accountability semantics replayable, portable, and verifiable.
+JEP (Judgment Event Protocol) defines signed atomic events and explicit verification results. Logs remain useful evidence. This repository illustrates a local application's structured, hash-linked envelope using only the Python standard library; the runnable demo does not implement JEP-Core-0.6 signatures or conformance.
 
-This repository is a compact explanation and runnable demonstration of the difference between ordinary audit logging and a **JEP-style accountability event protocol**.
+## Protocol and demonstration boundaries
 
-The goal is not to criticize logging. Logs are useful operational evidence: they help with debugging, monitoring, incident review, and forensic reconstruction. The distinction is that logging is usually an **evidence source**, while JEP is an **accountability protocol** with canonical events, delegation lineage, scoped authority, hash-chain integrity, and replay verification.
+| Concern | JEP-Core-0.6 or another explicit layer | This local demo |
+|---|---|---|
+| Event format | Core uses `jep`, `verb`, `who`, `when`, `what`, `nonce`, `sig` and permitted optional members | Illustrative `actor`, `intent`, `delegation`, `authority_scope` fields |
+| Cryptographic verification | Core canonicalization and detached JWS under a trusted key | Recomputed SHA-256 only; no authentication |
+| Hash links | Core event hash is computed by its specified rules; references/extensions may declare relationships | `event_hash` and `previous_event_hash` are local envelope fields |
+| Delegation | `D` statements and explicit application policy; JAC may declare dependencies | Local structured statements, not valid authority proofs |
+| Archive lifecycle | HJS defines its own archive, privacy and receipt responsibilities | JSON file with no HJS conformance claim |
+| Completeness | Requires a separate trust and evidence model | No independent trusted anchor or completeness guarantee |
 
-## Logging vs JEP
+Core does not require every event to carry a previous-event hash. JAC does not replace Core canonicalization, and a valid signature does not establish that an event's claim is true. See [jep-v06](https://github.com/hjs-spec/jep-v06), [hjs-05](https://github.com/hjs-spec/hjs-05) and [jac-agent-02](https://github.com/hjs-spec/jac-agent-02) for their respective contracts.
 
-| Dimension | Ordinary audit logging | JEP accountability events |
-| --- | --- | --- |
-| append-only | Often append-only in storage, but the append-only property is usually provided by the log backend rather than the event semantics. | Each event is designed to be appended to an archive and linked to the prior event hash. |
-| replayability | A log line can describe an action, but it usually cannot be replayed as a semantic accountability step without external context. | Events contain canonical fields that allow an archive to be replayed as a sequence of accountability claims. |
-| delegation lineage | May mention that one component called another, but lineage is typically free text or implicit. | Delegation is a first-class field that preserves who delegated to whom and for what intent. |
-| authority propagation | Authority is often inferred from credentials, runtime state, or surrounding systems. | Authority scope is explicitly carried with the event so the replay can check whether the action stayed within scope. |
-| portable verification | Verification depends on the logging system, schema conventions, and local operational context. | Verification can be performed by another system that understands the event format and hash rules. |
-| cross-system accountability | Correlation across services is possible, but depends on trace IDs, conventions, and manual interpretation. | Accountability semantics travel with the event archive, making cross-system review more direct. |
-| event canonicalization | Log formats vary, and semantically equivalent lines may serialize differently. | Events are canonicalized before hashing so replay verification is deterministic. |
-| hash-chain verification | Some logging systems add integrity controls, but ordinary log lines do not inherently form a semantic hash chain. | Every event includes `event_hash` and `previous_event_hash`, enabling archive-level chain verification. |
-
-## Minimal example
-
-A normal log entry can be accurate but underspecified:
-
-```text
-agent called tool
-```
-
-A JEP event records accountability semantics as structured data:
-
-```json
-{
-  "actor": "agent.alice",
-  "intent": "answer user request by checking repository state",
-  "delegation": {
-    "from": "user",
-    "to": "agent.alice",
-    "reason": "inspect repository and produce explanation"
-  },
-  "authority_scope": [
-    "read_repo",
-    "run_demo"
-  ],
-  "event_hash": "...",
-  "previous_event_hash": null,
-  "verification_state": "verified"
-}
-```
-
-The important difference is not that the JEP event is more verbose. The important difference is that the JEP event is canonicalized, hash-linked, and replay-verifiable.
-
-## Runnable demo
-
-The demo generates two artifacts under `out/`:
-
-- `out/audit.log`: ordinary log lines.
-- `out/jep_archive.json`: a canonicalized, hash-chained JEP event archive.
-
-Run it:
+## Run the local illustration
 
 ```bash
 python3 demo.py
-```
-
-Expected result:
-
-```text
-Wrote ordinary audit log: out/audit.log
-Wrote JEP event archive: out/jep_archive.json
-
-Replay check:
-- ordinary audit log: cannot replay verify accountability semantics (missing actor, intent, delegation, authority_scope, event_hash, previous_event_hash, and verification_state)
-- JEP archive: replay verification passed
-```
-
-You can also ask the demo to verify a previously generated archive:
-
-```bash
 python3 demo.py --verify out/jep_archive.json
 ```
 
-If an event is edited after generation, verification fails because the recomputed canonical hash will no longer match the stored `event_hash`, or the `previous_event_hash` link will no longer match the prior event.
+The script writes ordinary text to `out/audit.log` and local hash envelopes to `out/jep_archive.json`. The filename is retained for compatibility. `verification_state: "verified"` is an old demo marker, not a protocol verification result or signature assurance.
 
-## Repository layout
+Editing content without updating its stored hash is detected. An author who can rewrite the archive can recompute every hash and pass these local checks; deletion of a tail has no independently trusted completeness check. Accordingly the output says **local hash consistency**, not authenticated Core verification. Existing hashing and archived bytes retain their historical meaning.
 
-```text
-.
-├── README.md
-├── demo.py
-└── out/                 # generated by the demo
-```
-
-## Core conclusion
-
-Logging records what happened.
-
-JEP makes accountability semantics replayable, portable, and verifiable.
-
-Logging can be a valuable evidence source for a JEP event, an investigation, or an audit trail. It is just not, by itself, an accountability protocol.
+For a real signed path, use [jep-quickstart](https://github.com/hjs-spec/jep-quickstart) or [jep-e2e-demo](https://github.com/hjs-spec/jep-e2e-demo). Those examples call a local API and report their actual Core Level 1 scope.
