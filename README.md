@@ -1,3 +1,7 @@
+> **Maintenance moved to JEP Core — 2026-09-26.**
+>
+> The maintained [logging comparison](https://github.com/hjs-spec/jep-core/blob/main/docs/comparisons/logging.md) and [preserved unsigned illustration](https://github.com/hjs-spec/jep-core/tree/main/examples/legacy/logging-comparison) now live in jep-core. Submit future changes there. The material below is the historical Core 0.6-era explanation.
+
 # Structured events and logging
 
 JEP (Judgment Event Protocol) defines signed atomic events and explicit verification results. Logs remain useful evidence. This repository illustrates a local application's structured, hash-linked envelope using only the Python standard library; the runnable demo does not implement JEP-Core-0.6 signatures or conformance.
